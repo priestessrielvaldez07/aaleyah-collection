@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4">Financial Reports</h2>
+
+<!-- Date Range Selector -->
+<form method="POST" class="card p-3 mb-4 shadow-sm">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-5 col-12">
+            <label class="form-label">Start Date</label>
+            <input type="date" name="start_date" class="form-control" required>
+        </div>
+        <div class="col-md-5 col-12">
+            <label class="form-label">End Date</label>
+            <input type="date" name="end_date" class="form-control" required>
+        </div>
+        <div class="col-md-2 col-12 d-grid">
+            <button type="submit" class="btn btn-primary">Generate</button>
+        </div>
+    </div>
+</form>
+
+{% if stats %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">Income Summary: {{ stats.start }} to {{ stats.end }}</h5>
+        </div>
+        <div class="card-body">
+            <div class="row text-center g-3">
+                <div class="col-md-3 col-6">
+                    <div class="p-3 bg-light rounded">
+                        <h6 class="text-muted">Customers Served</h6>
+                        <h3>{{ stats.total_orders }}</h3>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="p-3 bg-light rounded">
+                        <h6 class="text-muted">Total Items Sold</h6>
+                        <h3>{{ stats.total_items_sold }}</h3>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="p-3 bg-light rounded">
+                        <h6 class="text-muted">Total Revenue (Paid)</h6>
+                        <h3 class="text-primary">{{ "%.2f"|format(stats.total_revenue) }}</h3>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="p-3 bg-light rounded">
+                        <h6 class="text-muted">Total Capital (Cost)</h6>
+                        <h3>{{ "%.2f"|format(stats.total_cost) }}</h3>
+                    </div>
+                </div>
+            </div>
+
+            <hr>
+
+            <div class="row text-center g-3 mt-2">
+                <div class="col-md-6">
+                    <div class="p-3 rounded {% if stats.net_profit >= 0 %}bg-success bg-opacity-10{% else %}bg-danger bg-opacity-10{% endif %}">
+                        <h5>Net Profit / Earnings</h5>
+                        <h2 class="{% if stats.net_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            {{ "%.2f"|format(stats.net_profit) }}
+                        </h2>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 rounded bg-danger bg-opacity-10">
+                        <h5>Total Loss (If any)</h5>
+                        <h2 class="text-danger">{{ "%.2f"|format(stats.total_loss) }}</h2>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-4 p-3 bg-info bg-opacity-10 rounded">
+                <h6 class="text-muted mb-0">Average Order Value (Per Customer)</h6>
+                <h4>{{ "%.2f"|format(stats.avg_order_value) }}</h4>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

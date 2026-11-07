@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4">Order History</h2>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    {% endfor %}
+{% endwith %}
+
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Order #</th>
+                    <th>Date</th>
+                    <th>Capital (Cost)</th>
+                    <th>Paid</th>
+                    <th>Profit/Loss</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td><strong>#{{ order.id }}</strong></td>
+                    <td>{{ order.date_created.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>{{ "%.2f"|format(order.total_cost) }}</td>
+                    <td>{{ "%.2f"|format(order.scoop_paid) if order.scoop_paid else 'Unpaid' }}</td>
+                    <td class="{% if order.earnings < 0 %}text-danger fw-bold{% else %}text-success{% endif %}">
+                        {{ "%.2f"|format(order.earnings) }}
+                    </td>
+                    <td>
+                        <a href="/order/{{ order.id }}" class="btn btn-sm btn-outline-primary mb-1">View/Print</a>
+                        
+                        <!-- Secure Delete Form -->
+                        <form action="/delete_order/{{ order.id }}" method="POST" style="display:inline;" onsubmit="return confirmDelete(event, {{ order.id }})">
+                            <input type="hidden" name="password" id="delete_pwd_{{ order.id }}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+function confirmDelete(event, orderId) {
+    // Ask for password before allowing the form to submit
+    let pwd = prompt("SECURITY CHECK:\nPlease enter your account password to delete this order:");
+    
+    // If user cancels or leaves it blank, stop the deletion
+    if (pwd === null || pwd.trim() === "") {
+        event.preventDefault();
+        return false;
+    }
+    
+    // Inject the password into the hidden form field and allow submission
+    document.getElementById('delete_pwd_' + orderId).value = pwd;
+    return true;
+}
+</script>
+{% endblock %}

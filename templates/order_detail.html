@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    @media print {
+        .no-print { display: none !important; }
+        .card { border: none !important; box-shadow: none !important; }
+        body { background: white; }
+    }
+</style>
+
+<div class="no-print mb-3">
+    <a href="/history" class="btn btn-secondary">Back to History</a>
+    <button onclick="window.print()" class="btn btn-success">Print / Save as PDF</button>
+</div>
+
+<div class="card p-4 shadow-sm mx-auto" style="max-width: 600px;">
+    <div class="text-center mb-4 border-bottom pb-3">
+        <h3>The Aaleyah Collection</h3>
+        <p class="mb-0 text-muted">Order Record</p>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-6"><strong>Order #:</strong> {{ order.id }}</div>
+        <div class="col-6 text-end"><strong>Date:</strong> {{ order.date_created.strftime('%Y-%m-%d %H:%M') }}</div>
+    </div>
+
+    <table class="table table-sm">
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th class="text-center">Qty</th>
+                <th class="text-end">Cost</th>
+                <th class="text-end">Price</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in order.items %}
+            <tr>
+                <td>{{ item.item_name }}</td>
+                <td class="text-center">{{ item.quantity }}</td>
+                <td class="text-end">{{ "%.2f"|format(item.cost_price_snapshot * item.quantity) }}</td>
+                <td class="text-end">{{ "%.2f"|format(item.selling_price_snapshot * item.quantity) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot class="table-light">
+            <tr>
+                <td colspan="2"><strong>Total Capital (Cost):</strong></td>
+                <td colspan="2" class="text-end fw-bold">{{ "%.2f"|format(order.total_cost) }}</td>
+            </tr>
+            <tr>
+                <td colspan="2"><strong>Scoop Package Paid:</strong></td>
+                <td colspan="2" class="text-end fw-bold">{{ "%.2f"|format(order.scoop_paid) if order.scoop_paid else '0.00' }}</td>
+            </tr>
+            <tr>
+                <td colspan="2"><strong>Earnings / Loss:</strong></td>
+                <td colspan="2" class="text-end fw-bold {% if order.earnings < 0 %}text-danger{% else %}text-success{% endif %}">
+                    {{ "%.2f"|format(order.earnings) }}
+                </td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+{% endblock %}

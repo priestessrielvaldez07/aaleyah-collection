@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4">New Order (POS)</h2>
+
+<div class="card p-3 mb-4 shadow-sm">
+    <div class="row g-2 align-items-end">
+        <div class="col-md-4 col-12">
+            <label class="form-label">Enter Item Number</label>
+            <input type="number" id="item_number_input" class="form-control" placeholder="Type #">
+        </div>
+        <div class="col-md-2 col-6">
+            <label class="form-label">Quantity</label>
+            <input type="number" id="item_qty_input" class="form-control" value="1" min="1">
+        </div>
+        <div class="col-md-3 col-6">
+            <label class="form-label">&nbsp;</label>
+            <button class="btn btn-primary w-100" onclick="addToCart()">Add to Cart</button>
+        </div>
+    </div>
+</div>
+
+<!-- The Cart -->
+<div class="card shadow-sm mb-4">
+    <div class="table-responsive">
+        <table class="table mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Item #</th>
+                    <th>Name</th>
+                    <th class="text-center">Quantity</th>
+                    <th class="text-end">Cost (Capital)</th>
+                    <th class="text-end">Price (Base)</th>
+                    <th class="text-center">Action</th>
+                </tr>
+            </thead>
+            <tbody id="cart_body"></tbody>
+            <tfoot class="table-secondary fw-bold">
+                <tr>
+                    <td colspan="3" class="text-end">TOTALS:</td>
+                    <td class="text-end" id="total_cost">0.00</td>
+                    <td class="text-end" id="total_price">0.00</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+<!-- Checkout / Earnings -->
+<form method="POST" action="/pos" id="checkout_form">
+    <div class="card p-3 shadow-sm bg-warning bg-opacity-10">
+        <div class="row g-3 align-items-center">
+            <div class="col-md-4 col-12">
+                <label class="form-label fw-bold">Scoop package paid (Actual Cash)</label>
+                <input type="number" step="0.01" name="scoop_paid" id="scoop_paid_input" class="form-control form-control-lg" placeholder="Optional" oninput="calculateEarnings()">
+            </div>
+            <div class="col-md-4 col-12">
+                <label class="form-label fw-bold" id="earnings_label">Your Earnings (Profit)</label>
+                <input type="text" id="earnings_display" class="form-control form-control-lg bg-light" readonly value="0.00">
+            </div>
+            <div class="col-md-4 col-12 d-grid">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-success btn-lg">Save & Complete Order</button>
+            </div>
+        </div>
+    </div>
+    <input type="hidden" name="cart_data" id="cart_data_input">
+</form>
+
+<!-- THE SECRET TRICK: We hide the data here so VS Code and Jinja don't fight -->
+<div id="inventory-data" style="display:none;">{{ inventory_json | safe }}</div>
+
+<script>
+    let cart = [];
+    // JavaScript reads the hidden box and converts it to data
+    let inventoryData = JSON.parse(document.getElementById('inventory-data').innerText); 
+
+    document.getElementById('item_number_input').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); addToCart(); }
+    });
+
+    function addToCart() {
+        let id = document.getElementById('item_number_input').value;
+        let qty = parseInt(document.getElementById('item_qty_input').value);
+        let item = inventoryData[id];
+
+        if (!item) { alert("Item number not found in inventory!"); return; }
+        if (item.stock < qty) { alert("Not enough stock! Available: " + item.stock); return; }
+
+        let existing = cart.find(c => c.id == id);
+        if (existing) { existing.qty += qty; } 
+        else { cart.push({ id: id, name: item.name, cost: item.cost, price: item.price, qty: qty }); }
+
+        renderCart();
+        document.getElementById('item_number_input').value = '';
+        document.getElementById('item_qty_input').value = 1;
+    }
+
+    function removeFromCart(index) {
+        cart.splice(index, 1);
+        renderCart();
+    }
+
+    function renderCart() {
+        let tbody = document.getElementById('cart_body');
+        tbody.innerHTML = '';
+        let totalCost = 0, totalPrice = 0;
+
+        cart.forEach((item, index) => {
+            let lineCost = item.cost * item.qty;
+            let linePrice = item.price * item.qty;
+            totalCost += lineCost;
+            totalPrice += linePrice;
+
+            tbody.innerHTML += `
+                <tr>
+                    <td>${item.id}</td>
+                    <td>${item.name}</td>
+                    <td class="text-center fw-bold">${item.qty}</td>
+                    <td class="text-end">${lineCost.toFixed(2)}</td>
+                    <td class="text-end">${linePrice.toFixed(2)}</td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-danger" onclick="removeFromCart(${index})">Remove</button>
+                    </td>
+                </tr>`;
+        });
+
+        document.getElementById('total_cost').innerText = totalCost.toFixed(2);
+        document.getElementById('total_price').innerText = totalPrice.toFixed(2);
+        calculateEarnings();
+    }
+
+    function calculateEarnings() {
+        let paid = parseFloat(document.getElementById('scoop_paid_input').value) || 0;
+        let cost = parseFloat(document.getElementById('total_cost').innerText) || 0;
+        let earnings = paid - cost;
+        
+        let display = document.getElementById('earnings_display');
+        let label = document.getElementById('earnings_label');
+
+        if (earnings < 0) {
+            display.value = Math.abs(earnings).toFixed(2);
+            display.classList.add('text-danger', 'fw-bold');
+            label.innerText = "LOSS:";
+            label.classList.add('text-danger');
+        } else {
+            display.value = earnings.toFixed(2);
+            display.classList.remove('text-danger', 'fw-bold');
+            label.innerText = "Your Earnings (Profit):";
+            label.classList.remove('text-danger');
+        }
+    }
+
+    document.getElementById('checkout_form').onsubmit = function() {
+        if (cart.length === 0) { alert("Your cart is empty!"); return false; }
+        document.getElementById('cart_data_input').value = JSON.stringify(cart);
+    };
+</script>
+{% endblock %}
