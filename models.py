@@ -8,7 +8,7 @@ db = SQLAlchemy()
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
-    password_hash = db.Column(db.String(150), nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False) # <-- CHANGED TO 255
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -22,7 +22,7 @@ class Inventory(db.Model):
     cost_price = db.Column(db.Float, nullable=False)
     selling_price = db.Column(db.Float, nullable=False)
     stock = db.Column(db.Integer, nullable=False, default=0)
-    is_active = db.Column(db.Boolean, default=True) # The new rule!
+    is_active = db.Column(db.Boolean, default=True)
 
 class Order(db.Model):
     id = db.Column(db.Integer, primary_key=True)

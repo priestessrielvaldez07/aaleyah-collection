@@ -9,8 +9,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
+# Using a fallback to sqlite if DATABASE_URL is not set, to prevent crashes
 app.config['SECRET_KEY'] = 'super_secret_aaleyah_key_12345'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///aaleyah_local.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///aaleyah_local.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
@@ -116,11 +117,9 @@ def inventory_screen():
         return redirect(url_for('inventory_screen'))
         
     items = Inventory.query.all()
-    # Pass low stock items to the inventory page for warnings
     low_stock_items = Inventory.query.filter(Inventory.stock <= 20, Inventory.is_active == True).order_by(Inventory.stock.asc()).all()
     return render_template('inventory.html', items=items, low_stock_items=low_stock_items)
 
-# --- TOGGLE ITEM STATUS (The Reactivate/Discontinue Pathway) ---
 @app.route('/toggle_item/<int:item_id>')
 @login_required
 def toggle_item(item_id):
